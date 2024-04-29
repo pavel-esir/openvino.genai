@@ -2,6 +2,29 @@
 
 These examples showcase inference of text-generation Large Language Models (LLMs): `chatglm`, `LLaMA`, `Qwen` and other models with the same signature. The applications don't have many configuration options to encourage the reader to explore and modify the source code. Loading `openvino_tokenizers` to `ov::Core` enables tokenization. Run `convert_tokenizer` to generate IRs for the samples. [group_beam_searcher.hpp](group_beam_searcher.hpp) implements the algorithm of the same name, which is used by `beam_search_causal_lm`. There is also a Jupyter [notebook](https://github.com/openvinotoolkit/openvino_notebooks/tree/main/notebooks/254-llm-chatbot) which provides an example of LLM-powered Chatbot in Python.
 
+### Install Python package openvino-genai
+
+```sh
+pip install openvino-tokenizers openvino-genai
+optimum-cli export openvino --model "TinyLlama/TinyLlama-1.1B-Chat-v1.0" --weight-format fp16  --trust-remote-code TinyLlama-1.1B-Chat-v1.0
+convert_tokenizer ./TinyLlama-1.1B-Chat-v1.0/ --output ./TinyLlama-1.1B-Chat-v1.0/ --with-detokenizer --trust-remote-code
+```
+```python
+import openvino_genai as ov_genai
+
+pipe  = ov_genai.LLMPipeline(model_path)
+pipe.get_tokenizer().tokenize()
+pipe.generate()
+pipe.get_tokenizer().detokenize()
+
+
+pipe  = ov.genai.LLMPipeline(model_path)
+pipe.get_tokenizer().tokenize()
+pipe.generate()
+pipe.get_tokenizer().detokenize()
+
+```
+
 ## How it works
 
 ### Stateful LLM
