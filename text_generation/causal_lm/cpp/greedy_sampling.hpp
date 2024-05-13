@@ -1,13 +1,14 @@
 // Copyright (C) 2023-2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include <regex>
-#include <random>
-#include <iostream>
-#include <cmath>
 #include <algorithm>
+#include <cmath>
+#include <iostream>
 #include <numeric>
+#include <random>
+#include <regex>
 #include <vector>
+
 
 struct TokenIdScore {
     int id;
@@ -16,8 +17,12 @@ struct TokenIdScore {
     TokenIdScore() = default;
     TokenIdScore(int id, float score) : id(id), score(score) {}
 
-    bool operator<(const TokenIdScore& other) const { return score < other.score; }
-    bool operator>(const TokenIdScore& other) const { return score > other.score; }
+    bool operator<(const TokenIdScore& other) const {
+        return score < other.score;
+    }
+    bool operator>(const TokenIdScore& other) const {
+        return score > other.score;
+    }
 
     friend std::ostream& operator<<(std::ostream& os, const TokenIdScore& self) {
         return os << "TokenIdScore(id=" << self.id << ", score=" << self.score << ")";
@@ -43,7 +48,7 @@ void sampling_top_k(TokenIdScore* first, TokenIdScore* kth, TokenIdScore* last) 
 }
 
 TokenIdScore* sampling_top_p(TokenIdScore* first, TokenIdScore* last, float top_p) {
-    //sort score
+    // sort score
     std::sort(first, last, std::greater<TokenIdScore>());
 
     int vocab_size = last - first;
@@ -52,15 +57,15 @@ TokenIdScore* sampling_top_p(TokenIdScore* first, TokenIdScore* last, float top_
         token_scores[i] = first[i];
     }
 
-    //calculate softmax
+    // calculate softmax
     sampling_softmax_inplace(token_scores.data(), token_scores.data() + token_scores.size());
 
     float prefix_sum = 0.0f;
 
-    //top_p 
+    // top_p
     for (int i = 0; i < vocab_size; i++) {
         prefix_sum += token_scores[i].score;
-        if (prefix_sum >= top_p){
+        if (prefix_sum >= top_p) {
             return first + (i + 1);
             break;
         }
@@ -69,8 +74,7 @@ TokenIdScore* sampling_top_p(TokenIdScore* first, TokenIdScore* last, float top_
     return last;
 }
 
-void sampling_repetition_penalty(float* first, float* last, const std::vector<int64_t>& input_ids,
-    float penalty) {
+void sampling_repetition_penalty(float* first, float* last, const std::vector<int64_t>& input_ids, float penalty) {
     if (penalty < 0) {
         std::cout << "penalty must be a positive float, but got " << penalty;
         return;
@@ -103,24 +107,22 @@ struct SamplingParameters {
 };
 
 // GreedySampling processes logits prduced by a language model and chooses the token with
-// the highest probablity as the next token in the sequence. get_out_token() returns token 
-// ids selected by the algorithm. The value is used for next inference. 
+// the highest probablity as the next token in the sequence. get_out_token() returns token
+// ids selected by the algorithm. The value is used for next inference.
 struct GreedySampling {
     SamplingParameters parameters;
-    GreedySampling(SamplingParameters parameters) : parameters{ std::move(parameters) } {        
-    }
+    GreedySampling(SamplingParameters parameters) : parameters{std::move(parameters)} {}
 
     int64_t get_out_token(float* logits, size_t vocab_size) {
         int64_t out_token;
-        std::vector<int64_t> prompt{ parameters.prompt };
+        std::vector<int64_t> prompt{parameters.prompt};
 
         // logits pre-process
         if (parameters.repeat_penalty != 1.f) {
             sampling_repetition_penalty(logits, logits + vocab_size, prompt, parameters.repeat_penalty);
         }
 
-        if (parameters.do_sample)
-        {
+        if (parameters.do_sample) {
             if (parameters.temp > 0) {
                 sampling_temperature(logits, logits + vocab_size, parameters.temp);
             }
@@ -132,14 +134,16 @@ struct GreedySampling {
 
             // top_k sampling
             if (0 < parameters.top_k && parameters.top_k < (int)token_scores.size()) {
-                sampling_top_k(token_scores.data(), token_scores.data() + parameters.top_k,
-                    token_scores.data() + token_scores.size());
+                sampling_top_k(token_scores.data(),
+                               token_scores.data() + parameters.top_k,
+                               token_scores.data() + token_scores.size());
                 token_scores.resize(parameters.top_k);
             }
 
             // top_p sampling
             if (0.f < parameters.top_p && parameters.top_p < 1.f) {
-                auto pos = sampling_top_p(token_scores.data(), token_scores.data() + token_scores.size(), parameters.top_p);
+                auto pos =
+                    sampling_top_p(token_scores.data(), token_scores.data() + token_scores.size(), parameters.top_p);
                 token_scores.resize(pos - token_scores.data());
             }
 
@@ -154,13 +158,12 @@ struct GreedySampling {
 
             std::discrete_distribution<> dist(logits, logits + token_scores.size());
             out_token = token_scores[dist(gen)].id;
-        }
-        else {
+        } else {
             out_token = std::max_element(logits, logits + vocab_size) - logits;
         }
 
         prompt.push_back(out_token);
 
-        return { out_token };
+        return {out_token};
     }
 };

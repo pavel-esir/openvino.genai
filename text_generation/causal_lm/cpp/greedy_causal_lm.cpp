@@ -36,7 +36,7 @@ struct TextStreamer {
             std::cout << std::string_view{text.data() + print_len, text.size() - print_len};
             token_cache.clear();
             print_len = 0;
-	    return;
+            return;
         }
         if (text.size() >= 3 && text.compare(text.size() - 3, 3, "�") == 0) {
             // Don't print incomplete text
@@ -53,7 +53,7 @@ struct TextStreamer {
         print_len = 0;
     }
 };
-}
+}  // namespace
 
 int main(int argc, char* argv[]) try {
     if (argc != 3) {
@@ -63,17 +63,16 @@ int main(int argc, char* argv[]) try {
     // Compile models
     ov::Core core;
     core.add_extension(OPENVINO_TOKENIZERS_PATH);  // OPENVINO_TOKENIZERS_PATH is defined in CMakeLists.txt
-    //Read the tokenizer model information from the file to later get the runtime information
+    // Read the tokenizer model information from the file to later get the runtime information
     auto tokenizer_model = core.read_model(std::string{argv[1]} + "/openvino_tokenizer.xml");
     // tokenizer and detokenizer work on CPU only
-    ov::InferRequest tokenizer = core.compile_model(
-        tokenizer_model, "CPU").create_infer_request();
+    ov::InferRequest tokenizer = core.compile_model(tokenizer_model, "CPU").create_infer_request();
     auto [input_ids, attention_mask] = tokenize(tokenizer, argv[2]);
-    ov::InferRequest detokenizer = core.compile_model(
-        std::string{argv[1]} + "/openvino_detokenizer.xml", "CPU").create_infer_request();
+    ov::InferRequest detokenizer =
+        core.compile_model(std::string{argv[1]} + "/openvino_detokenizer.xml", "CPU").create_infer_request();
     // The model can be compiled for GPU as well
-    ov::InferRequest lm = core.compile_model(
-        std::string{argv[1]} + "/openvino_model.xml", "CPU").create_infer_request();
+    ov::InferRequest lm =
+        core.compile_model(std::string{argv[1]} + "/openvino_model.xml", "CPU").create_infer_request();
     auto seq_len = input_ids.get_size();
 
     // Initialize inputs
@@ -92,11 +91,11 @@ int main(int argc, char* argv[]) try {
     int64_t sequence_offset = lm.get_tensor("logits").get_shape().at(1) - 1;
     size_t vocab_size = lm.get_tensor("logits").get_shape().back();
 
-    float* logits = lm.get_tensor("logits").data<float>() + (sequence_offset) * vocab_size;
-    
+    float* logits = lm.get_tensor("logits").data<float>() + (sequence_offset)*vocab_size;
+
     const int64_t* prompt_data = input_ids.data<const int64_t>();
-    SamplingParameters parameters{ std::vector<int64_t>{prompt_data, prompt_data + input_ids.get_size()} };
-    GreedySampling greedy_sampling{ parameters };
+    SamplingParameters parameters{std::vector<int64_t>{prompt_data, prompt_data + input_ids.get_size()}};
+    GreedySampling greedy_sampling{parameters};
     int64_t out_token = greedy_sampling.get_out_token(logits, vocab_size);
 
     lm.get_tensor("input_ids").set_shape({BATCH_SIZE, 1});
@@ -104,10 +103,10 @@ int main(int argc, char* argv[]) try {
     TextStreamer text_streamer{std::move(detokenizer)};
 
     // Get the runtime info from the tokenizer model that we read earlier
-    auto rt_info = tokenizer_model->get_rt_info(); //Get the runtime info for the model
+    auto rt_info = tokenizer_model->get_rt_info();  // Get the runtime info for the model
     int64_t SPECIAL_EOS_TOKEN;
 
-    if (rt_info.count("eos_token_id") > 0) { //check if the runtime information has a valid EOS token ID
+    if (rt_info.count("eos_token_id") > 0) {  // check if the runtime information has a valid EOS token ID
         SPECIAL_EOS_TOKEN = rt_info["eos_token_id"].as<int64_t>();
     } else {
         throw std::runtime_error("EOS token ID not found in model's runtime information.");
