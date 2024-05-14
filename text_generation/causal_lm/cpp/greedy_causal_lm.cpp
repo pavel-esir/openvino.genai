@@ -1,7 +1,7 @@
 // Copyright (C) 2023-2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include <greedy_sampling.hpp>
+#include <random_sampling.hpp>
 #include <openvino/openvino.hpp>
 
 namespace {
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]) try {
 
     const int64_t* prompt_data = input_ids.data<const int64_t>();
     SamplingParameters parameters{std::vector<int64_t>{prompt_data, prompt_data + input_ids.get_size()}};
-    GreedySampling greedy_sampling{parameters};
+    RandomSampling greedy_sampling{parameters};
     int64_t out_token = greedy_sampling.get_out_token(logits, vocab_size);
 
     lm.get_tensor("input_ids").set_shape({BATCH_SIZE, 1});
