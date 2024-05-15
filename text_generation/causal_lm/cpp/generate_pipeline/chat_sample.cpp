@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include <openvino/openvino.hpp>
-#include "openvino/genai/llm_pipeline.hpp"
+#include "openvino_genai/llm_pipeline.hpp"
 
 using namespace std;
 

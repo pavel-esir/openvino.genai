@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 #pragma once
 
-#include "openvino/genai/streamer_base.hpp"
-#include "openvino/genai/tokenizer.hpp"
+#include "openvino_genai/streamer_base.hpp"
+#include "openvino_genai/tokenizer.hpp"
 
 namespace ov {
 

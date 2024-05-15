@@ -16,16 +16,17 @@ if(NOT pybind11_POPULATED)
 endif()
 
 pybind11_add_module(py_generate_pipeline py_generate_pipeline.cpp)
-target_link_libraries(py_generate_pipeline PRIVATE generate_pipeline_lib)
+target_link_libraries(py_generate_pipeline PRIVATE openvino_genai)
 
-install(TARGETS py_generate_pipeline LIBRARY DESTINATION . COMPONENT genai_python)
+# find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
+install(TARGETS py_generate_pipeline LIBRARY DESTINATION . COMPONENT pygenai_${Python_VERSION_MAJOR}_${Python_VERSION_MINOR})
 
 # setting RPATH / LC_RPATH depending on platform
 if(LINUX)
-    # to find libgenerate_pipeline_lib.so in the same folder
+    # to find libgenai.so in the same folder
     set(rpaths "$ORIGIN")
 elseif(APPLE)
-    # to find libgenerate_pipeline_lib.dylib in the same folder
+    # to find libgenai.dylib in the same folder
     set(rpaths "@loader_path")
     if(DEFINED SKBUILD)
         # in case we build pip package, we need to refer to libopenvino.dylib from 'openvino' package

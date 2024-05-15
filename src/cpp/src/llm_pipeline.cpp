@@ -10,8 +10,8 @@
 #include <jinja2cpp/template_env.h>
 
 #include <openvino/openvino.hpp>
-#include "openvino/genai/generation_config.hpp"
-#include "openvino/genai/llm_pipeline.hpp"
+#include "openvino_genai/generation_config.hpp"
+#include "openvino_genai/llm_pipeline.hpp"
 #include "utils.hpp"
 #include "generation_config_helper.hpp"
 #include "group_beam_searcher.hpp"

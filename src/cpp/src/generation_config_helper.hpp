@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "openvino/genai/generation_config.hpp"
+#include "openvino_genai/generation_config.hpp"
 
 namespace ov {
 

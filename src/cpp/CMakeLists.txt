@@ -44,13 +44,13 @@ ov_genai_build_jinja2cpp()
 
 file(GLOB SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
-set(TARGET_NAME generate_pipeline_lib)
+set(TARGET_NAME genai)
 add_library(${TARGET_NAME} SHARED ${SOURCE_FILES})
 
 target_include_directories(${TARGET_NAME}
     # TODO: remove it, because beam_search algo should not be exposed to end users
-    PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../../text_generation/causal_lm/cpp/
-    PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
+    PRIVATE "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../../text_generation/causal_lm/cpp/>"
+    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>")
 
 target_link_libraries(${TARGET_NAME} PUBLIC openvino::runtime PRIVATE nlohmann_json::nlohmann_json jinja2cpp)
 
@@ -58,11 +58,54 @@ target_compile_definitions(${TARGET_NAME} PRIVATE OPENVINO_TOKENIZERS_PATH=\"$<T
 
 target_compile_features(${TARGET_NAME} PUBLIC cxx_std_17)
 
-install(TARGETS ${TARGET_NAME} LIBRARY DESTINATION . COMPONENT genai RUNTIME DESTINATION . COMPONENT genai)
+install(TARGETS ${TARGET_NAME} LIBRARY DESTINATION . COMPONENT core_genai RUNTIME DESTINATION . COMPONENT core_genai)
 
 # Populate python with the libraries to allow skipping wheel installation
-add_custom_command(TARGET generate_pipeline_lib POST_BUILD
+add_custom_command(TARGET genai POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E copy
-        "$<TARGET_FILE:generate_pipeline_lib>"
-        "${CMAKE_CURRENT_SOURCE_DIR}/../python/openvino_genai/$<TARGET_FILE_NAME:generate_pipeline_lib>"
-    COMMENT "Copy generate_pipeline_lib to src/python/openvino_genai")
+        "$<TARGET_FILE:genai>"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../python/openvino_genai/$<TARGET_FILE_NAME:genai>"
+    COMMENT "Copy genai to src/python/openvino_genai")
+
+export(TARGETS genai NAMESPACE openvino:: FILE "${CMAKE_BINARY_DIR}/openvino_genaiConfig.cmake")  # TODO: try to merge
+install(TARGETS ${TARGET_NAME} LIBRARY DESTINATION . COMPONENT core_genai RUNTIME DESTINATION . COMPONENT core_genai)
+
+include(GenerateExportHeader)
+
+generate_export_header(genai)
+set_property(TARGET genai PROPERTY VERSION ${openvino_genai_VERSION})
+set_property(TARGET genai PROPERTY SOVERSION 3)
+set_property(TARGET genai PROPERTY INTERFACE_genai_MAJOR_VERSION 3)
+set_property(TARGET genai APPEND PROPERTY COMPATIBLE_INTERFACE_STRING genai_MAJOR_VERSION)
+
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" ARCH_FOLDER)
+if(X86_64)
+    set(ARCH_FOLDER intel64)
+elseif(X86)
+    set(ARCH_FOLDER ia32)
+elseif(MSVC AND ARM)
+    set(ARCH_FOLDER arm)
+elseif((MSVC OR APPLE) AND AARCH64)
+    set(ARCH_FOLDER arm64)
+elseif(UNIVERSAL2)
+    set(ARCH_FOLDER universal2)
+elseif(ARCH_FOLDER STREQUAL "x86_64" OR ARCH_FOLDER STREQUAL "amd64" # Windows detects Intel's 64-bit CPU as AMD64
+        OR CMAKE_OSX_ARCHITECTURES STREQUAL "x86_64")
+    set(ARCH_FOLDER intel64)
+endif()
+install(TARGETS genai EXPORT openvino_genaiTargets
+    LIBRARY DESTINATION runtime/lib/${ARCH_FOLDER}/${CMAKE_BUILD_TYPE} COMPONENT core_genai_dev
+    ARCHIVE DESTINATION runtime/lib/${ARCH_FOLDER}/${CMAKE_BUILD_TYPE} COMPONENT core_genai_dev
+    RUNTIME DESTINATION runtime/bin/${ARCH_FOLDER}/${CMAKE_BUILD_TYPE} COMPONENT core_genai_dev
+    INCLUDES DESTINATION runtime/include)
+install(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/" DESTINATION runtime/include COMPONENT core_genai_dev)
+
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file("${CMAKE_BINARY_DIR}/openvino_genaiConfigVersion.cmake" VERSION ${openvino_genai_VERSION} COMPATIBILITY AnyNewerVersion)
+
+export(EXPORT openvino_genaiTargets FILE "${CMAKE_BINARY_DIR}/openvino_genaiTargets.cmake" NAMESPACE openvino::)
+configure_file(cmake/openvino_genaiConfig.cmake "${CMAKE_BINARY_DIR}/openvino_genaiConfig.cmake" COPYONLY)
+
+install(EXPORT openvino_genaiTargets FILE openvino_genaiTargets.cmake NAMESPACE openvino:: DESTINATION runtime/cmake)
+install(FILES cmake/openvino_genaiConfig.cmake "${CMAKE_BINARY_DIR}/openvino_genaiConfigVersion.cmake"
+    DESTINATION runtime/cmake COMPONENT core_genai_dev)

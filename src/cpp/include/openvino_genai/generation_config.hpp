@@ -9,7 +9,7 @@
 
 #include "openvino/runtime/compiled_model.hpp"
 #include "openvino/runtime/infer_request.hpp"
-#include "openvino/genai/tokenizer.hpp"
+#include "openvino_genai/tokenizer.hpp"
 
 namespace ov {
 

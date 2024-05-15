@@ -1,7 +1,7 @@
 // Copyright (C) 2023-2024 Intel Corporation
 // SPDX-License-Identifier: Apache-2.0
 
-#include <openvino/genai/llm_pipeline.hpp>
+#include <openvino_genai/llm_pipeline.hpp>
 
 int main(int argc, char* argv[]) try {
     if (argc < 3) {

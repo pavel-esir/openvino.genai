@@ -7,14 +7,14 @@
 #include <vector>
 #include <initializer_list>
 #include <openvino/runtime/tensor.hpp>
-#include "openvino/genai/visibility.hpp"
+#include "openvino_genai/visibility.hpp"
 
 namespace ov {
 
 /**
 * @brief class is used to encode prompts and decode resulting tokens
 */
-class OPENVINO_GENAI_EXPORTS Tokenizer {
+class openvino_genai_EXPORTS Tokenizer {
 public:
     /**
     * @brief ov::Tokenizer constructor.
