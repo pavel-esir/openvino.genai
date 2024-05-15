@@ -101,6 +101,7 @@ struct SamplingParameters {
 
 // RandomSampling processes logits produced by a language model and randomly samples token from top_k or top_p
 // distribution. If do_sample set to false arg_max token returned.
+// todo: add batching
 struct RandomSampling {
     SamplingParameters parameters;
     RandomSampling(SamplingParameters parameters) : parameters{std::move(parameters)} {}

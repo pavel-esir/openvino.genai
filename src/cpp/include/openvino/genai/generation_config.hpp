@@ -74,9 +74,9 @@ public:
     StopCriteria stop_criteria = StopCriteria::heuristic;
     
     // Multinomial
-    float temperature = 0.0f;
+    float temperature = 1.0f;
     float top_p = 1.0f;
-    int top_k = -1;
+    int top_k = 50;
     bool do_sample = false;
     float repetition_penalty = 1.0f;
 
