@@ -11,8 +11,6 @@
 #include "openvino/genai/tokenizer.hpp"
 #include "openvino/genai/streamer_base.hpp"
 
-using namespace std;
-
 namespace ov {
 
 using StreamerVariant = std::variant<std::function<void (std::string)>, std::shared_ptr<StreamerBase>>;
@@ -82,7 +80,7 @@ public:
     * @param streamer optional streamer
     * @return std::string decoded resulting text
     */
-    std::string generate(std::string text, OptionalGenerationConfig generation_config=nullopt, OptionalStreamerVariant streamer=nullopt);
+    std::string generate(std::string text, OptionalGenerationConfig generation_config=std::nullopt, OptionalStreamerVariant streamer=std::nullopt);
     
     template <typename... Properties>
     util::EnableIfAllStringAny<std::string, Properties...> generate(
@@ -109,6 +107,7 @@ public:
     * @return DecodedResults a structure with resulting texts & scores
     */
     DecodedResults generate(std::vector<std::string> texts, OptionalGenerationConfig generation_config);
+    DecodedResults generate(std::initializer_list<std::string> text, OptionalGenerationConfig generation_config);
 
     /**
     * @brief Low level generate to be called with already encoded input_ids tokens.
@@ -123,8 +122,8 @@ public:
     */
     EncodedResults generate(ov::Tensor input_ids, 
                             std::optional<ov::Tensor> attention_mask, 
-                            OptionalGenerationConfig generation_config=nullopt,
-                            OptionalStreamerVariant streamer=nullopt);
+                            OptionalGenerationConfig generation_config=std::nullopt,
+                            OptionalStreamerVariant streamer=std::nullopt);
     
     template <typename InputsType, typename... Properties>
     util::EnableIfAllStringAny<std::string, Properties...> operator()(
@@ -133,11 +132,11 @@ public:
         return generate(text, AnyMap{std::forward<Properties>(properties)...});
     }
     
-    DecodedResults operator()(std::vector<std::string> text, OptionalGenerationConfig generation_config=nullopt);
-    DecodedResults operator()(std::initializer_list<std::string> text, OptionalGenerationConfig generation_config=nullopt);
+    DecodedResults operator()(std::vector<std::string> text, OptionalGenerationConfig generation_config=std::nullopt);
+    DecodedResults operator()(std::initializer_list<std::string> text, OptionalGenerationConfig generation_config=std::nullopt);
 
     // generate with streamers
-    std::string operator()(std::string text, OptionalGenerationConfig generation_config=nullopt, OptionalStreamerVariant streamer=nullopt);
+    std::string operator()(std::string text, OptionalGenerationConfig generation_config=std::nullopt, OptionalStreamerVariant streamer=std::nullopt);
     std::string operator()(std::string text, OptionalStreamerVariant streamer);
     
     ov::Tokenizer get_tokenizer();

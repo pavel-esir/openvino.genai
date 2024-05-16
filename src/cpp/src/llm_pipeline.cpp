@@ -14,12 +14,11 @@
 #include "openvino/genai/llm_pipeline.hpp"
 #include "utils.hpp"
 #include "generation_config_helper.hpp"
+#include "group_beam_searcher.hpp"
 #include "text_callback_streamer.hpp"
 
 
 namespace ov {
-
-ov::EncodedResults beam_search(ov::InferRequest& model_runner, ov::Tensor prompts, ov::Tensor attentin_mask, GenerationConfig sampling_params);
 
 ov::EncodedResults greedy_decoding(
     ov::InferRequest& model_runner, 
@@ -116,6 +115,8 @@ ov::LLMPipeline::LLMPipelineImpl::LLMPipelineImpl(std::string& path, std::string
         nlohmann::json data = nlohmann::json::parse(f);
         m_chat_template = data.value("chat_template", "");
     }
+
+    
     
     m_device = device;
 
@@ -152,19 +153,19 @@ std::string ov::LLMPipeline::LLMPipelineImpl::generate(
 
     auto [input_ids, attention_mask] = m_tokenizer.encode(text);
 
-    // todo: W/A If sentence begins with a special tokens (<bos>, <s>, etc.) openvino_tokenizer inserts 2 special extra tokens <bos> and "▁",
+    // todo: W/A If sentence begins with a specfial tokens (<bos>, <s>, etc.) openvino_tokenizer inserts 2 special extra tokens <bos> and "▁",
     // but HF does not do that. Moreover openvino_tokenizer always inserts <bos> but in chat scenario HF does not do that because skip_special_tokens=True.
     // Need to remove both of that tokens manually to get exact token by token alignment with HF
     auto size = input_ids.get_shape();
     int64_t* inputs_data = input_ids.data<int64_t>();
     std::vector<int64_t> tmp_ids(inputs_data, inputs_data + input_ids.get_size()); // todo: works only for batch 1
-    tmp_ids.erase(tmp_ids.begin());
+    // tmp_ids.erase(tmp_ids.begin());
 
     auto attention_mask_data = attention_mask.data<int64_t>();
     std::vector<float> tmp_attn_mask(attention_mask_data, attention_mask_data + attention_mask.get_size());
-    tmp_attn_mask.erase(tmp_attn_mask.begin());
+    // tmp_attn_mask.erase(tmp_attn_mask.begin());
 
-    std::vector<std::string> prefixes_to_exclude = {"<s>", "</s>"};  // todo: for TinyLlama, need to get them form generation_config
+    std::vector<std::string> prefixes_to_exclude = {config.eos_token, config.bos_token};
     auto prefix_match = [&text](std::string prefix) { return text.substr(0, prefix.length()) == prefix; };
     if (std::any_of(prefixes_to_exclude.begin(), prefixes_to_exclude.end(), prefix_match)) {
         tmp_ids.erase(tmp_ids.begin());
@@ -184,6 +185,10 @@ std::string ov::LLMPipeline::LLMPipelineImpl::generate(
 
 ov::DecodedResults ov::LLMPipeline::generate(std::vector<std::string> texts, OptionalGenerationConfig generation_config) {
     return m_pimpl->generate(texts, generation_config);
+}
+
+ov::DecodedResults ov::LLMPipeline::generate(std::initializer_list<std::string> text, OptionalGenerationConfig generation_config) {
+    return m_pimpl->generate(text, generation_config);
 }
 
 ov::DecodedResults ov::LLMPipeline::LLMPipelineImpl::generate(std::vector<std::string> texts, OptionalGenerationConfig generation_config) {
@@ -225,6 +230,10 @@ ov::EncodedResults ov::LLMPipeline::LLMPipelineImpl::generate(
         streamer_ptr = *streamer_obj;
     } else if (auto callback = std::get_if<std::function<void(std::string)>>(&*streamer)) {
         streamer_ptr = std::make_shared<TextCallbackStreamer>(m_tokenizer, *callback);
+    }
+    auto batch_size = input_ids.get_shape().at(0);
+    if ((batch_size != 1 || !config_helper.is_greedy_decoding()) && streamer_ptr) {
+        OPENVINO_THROW("Currently streaming is possible only with batch size=1 and greedy decoding");
     }
 
     auto attention_mask_data = attention_mask.has_value() ? *attention_mask : ov::generate_utils::init_attention_mask(input_ids);
