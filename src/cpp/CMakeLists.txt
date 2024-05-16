@@ -74,10 +74,10 @@ install(TARGETS ${TARGET_NAME} LIBRARY DESTINATION . COMPONENT core_genai RUNTIM
 include(GenerateExportHeader)
 
 generate_export_header(genai)
-set_property(TARGET genai PROPERTY VERSION ${openvino_genai_VERSION})
-set_property(TARGET genai PROPERTY SOVERSION 3)
-set_property(TARGET genai PROPERTY INTERFACE_genai_MAJOR_VERSION 3)
-set_property(TARGET genai APPEND PROPERTY COMPATIBLE_INTERFACE_STRING genai_MAJOR_VERSION)
+# set_property(TARGET genai PROPERTY VERSION ${openvino_genai_VERSION})
+# set_property(TARGET genai PROPERTY SOVERSION 3)
+# set_property(TARGET genai PROPERTY INTERFACE_genai_MAJOR_VERSION 3)
+# set_property(TARGET genai APPEND PROPERTY COMPATIBLE_INTERFACE_STRING genai_MAJOR_VERSION)
 
 string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" ARCH_FOLDER)
 if(X86_64)
