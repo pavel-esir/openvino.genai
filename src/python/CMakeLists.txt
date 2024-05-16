@@ -37,7 +37,7 @@ if(rpaths)
     set_target_properties(py_generate_pipeline PROPERTIES INSTALL_RPATH "${rpaths}")
 endif()
 
-# Populate python with the libraries to allow skipping wheel installation
+# Copy the library to python to allow skipping wheel installation
 add_custom_command(TARGET py_generate_pipeline POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E copy
         "$<TARGET_FILE:py_generate_pipeline>"

@@ -10,11 +10,9 @@ else()
     set(OPENVINO_TOKENIZERS_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../bin/openvino_tokenizers.dll)  # TODO: I'll go away after the generate() gets a way to find openvino_tokenizers
 endif()
 
-if(openvino_genai_SOURCE_DIR)
-    set(openvino_genai_DIR "${CMAKE_BINARY_DIR}")
-endif()
-
-find_package(openvino_genai REQUIRED)
+find_package(openvino_genai REQUIRED
+    PATHS "${CMAKE_BINARY_DIR}"  # Reuse the package from the build. The lowest priority.
+)
 
 add_executable(greedy_causal_lm greedy_causal_lm.cpp)
 target_compile_definitions(greedy_causal_lm PRIVATE OPENVINO_TOKENIZERS_PATH="${OPENVINO_TOKENIZERS_PATH}")
