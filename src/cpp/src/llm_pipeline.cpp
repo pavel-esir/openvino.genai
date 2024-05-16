@@ -232,8 +232,8 @@ ov::EncodedResults ov::LLMPipeline::LLMPipelineImpl::generate(
         streamer_ptr = std::make_shared<TextCallbackStreamer>(m_tokenizer, *callback);
     }
     auto batch_size = input_ids.get_shape().at(0);
-    if ((batch_size != 1 || !config_helper.is_greedy_decoding()) && streamer_ptr) {
-        OPENVINO_THROW("Currently streaming is possible only with batch size=1 and greedy decoding");
+    if ((batch_size != 1 || !(config_helper.is_greedy_decoding() || config_helper.is_multinomial())) && streamer_ptr) {
+        OPENVINO_THROW("Currently streaming is possible only with batch size=1 and greedy or multinomial decoding");
     }
 
     auto attention_mask_data = attention_mask.has_value() ? *attention_mask : ov::generate_utils::init_attention_mask(input_ids);

@@ -16,42 +16,6 @@
 
 namespace {
 
-/**
- * Set position ids tensor for single token inference based on provided attention mask
- * Supports multi batch
- * Supports sparse attention_mask
- */
-void update_position_ids(ov::Tensor& position_ids, const ov::Tensor& attention_mask) {
-    const size_t batch_size = attention_mask.get_shape().at(0);
-    const size_t sequence_length = attention_mask.get_shape().at(1);
-    position_ids.set_shape({batch_size, 1});
-
-    for (size_t batch = 0; batch < batch_size; batch++) {
-        int64_t* start = attention_mask.data<int64_t>() + batch * sequence_length;
-        position_ids.data<int64_t>()[batch] = std::accumulate(start, start + sequence_length, 0);
-    }
-}
-
-/**
- * Get attention mask tensor for single token inference
- * Supports multi batch
- * Supports sparse attention_mask
- */
-ov::Tensor extend_attention_mask(ov::Tensor attention_mask) {
-    auto shape = attention_mask.get_shape();
-    auto batch_size = shape[0];
-    auto seq_len = shape[1];
-
-    ov::Tensor new_atten_mask = ov::Tensor{attention_mask.get_element_type(), {batch_size, seq_len + 1}};
-    auto old_data = attention_mask.data<int64_t>();
-    auto new_data = new_atten_mask.data<int64_t>();
-    for (size_t batch = 0; batch < batch_size; ++batch) {
-        std::memcpy(new_data + batch * (seq_len + 1), old_data + batch * seq_len, seq_len * sizeof(int64_t));
-        new_data[batch * (seq_len + 1) + seq_len] = 1;
-    }
-    return new_atten_mask;
-}
-
 struct TokenIdScore {
     int id;
     float score;
@@ -162,7 +126,7 @@ struct RandomSampling {
     SamplingParameters parameters;
     RandomSampling(SamplingParameters parameters) : parameters{std::move(parameters)} {}
 
-    TokenIdScore get_out_token(float* logits, size_t vocab_size, vector<int64_t> tokens) {
+    TokenIdScore get_out_token(float* logits, size_t vocab_size, std::vector<int64_t> tokens) {
         // logits pre-process
         if (parameters.repetition_penalty != 1.0f) {
             sampling_repetition_penalty(logits, logits + vocab_size, tokens, parameters.repetition_penalty);
@@ -273,8 +237,10 @@ ov::EncodedResults multinominal_decoding(ov::InferRequest& m_model_runner,
     size_t max_new_tokens = config_helper.get_max_new_tokens(prompt_len);
 
     for (size_t i = 0; i < max_new_tokens - 1; i++) {
-        update_position_ids(position_ids, m_model_runner.get_tensor("attention_mask"));
-        m_model_runner.set_tensor("attention_mask", extend_attention_mask(m_model_runner.get_tensor("attention_mask")));
+        ov::generate_utils::update_position_ids(m_model_runner.get_tensor("position_ids"),
+                                                m_model_runner.get_tensor("attention_mask"));
+        m_model_runner.set_tensor("attention_mask",
+                                  ov::generate_utils::extend_attention(m_model_runner.get_tensor("attention_mask")));
 
         m_model_runner.get_tensor("input_ids").data<int64_t>()[0] = out_token.id;
 
