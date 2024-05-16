@@ -11,7 +11,9 @@ else()
 endif()
 
 find_package(openvino_genai REQUIRED
-    PATHS "${CMAKE_BINARY_DIR}"  # Reuse the package from the build. The lowest priority.
+    PATHS
+        "${CMAKE_BINARY_DIR}"  # Reuse the package from the build.
+        ${OpenVINO_DIR}  # GenAI may be installed alogside with OpenVINO.
 )
 
 add_executable(greedy_causal_lm greedy_causal_lm.cpp)
