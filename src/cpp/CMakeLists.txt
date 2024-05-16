@@ -46,6 +46,7 @@ file(GLOB SOURCE_FILES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 
 set(TARGET_NAME genai)
 add_library(${TARGET_NAME} SHARED ${SOURCE_FILES})
+add_library(openvino::genai ALIAS genai)
 
 target_include_directories(${TARGET_NAME}
     # TODO: remove it, because beam_search algo should not be exposed to end users
