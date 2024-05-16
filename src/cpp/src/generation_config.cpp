@@ -96,7 +96,7 @@ bool GenerationConfigHelper::is_beam_search() const {
     return m_config.num_beams > 1;
 }
 
-bool GenerationConfigHelper::is_multimomial() const {
+bool GenerationConfigHelper::is_multinomial() const {
     return m_config.do_sample;
 }
 

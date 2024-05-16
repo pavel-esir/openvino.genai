@@ -30,6 +30,14 @@ ov::EncodedResults greedy_decoding(
     bool is_chat_conversation = false
 );
 
+ov::EncodedResults multinominal_decoding(
+    ov::InferRequest& model_runner,
+    ov::Tensor prompts,
+    ov::Tensor attentin_mask,
+    GenerationConfig sampling_params,
+    std::shared_ptr<StreamerBase> streamer
+);
+
 
 class LLMPipeline::LLMPipelineImpl {
 public:
@@ -225,9 +233,8 @@ ov::EncodedResults ov::LLMPipeline::LLMPipelineImpl::generate(
         result = ov::greedy_decoding(m_model_runner, input_ids, attention_mask_data, config, streamer_ptr, is_chat_conversation);
     } else if (config_helper.is_beam_search()) {
         result = beam_search(m_model_runner, input_ids, attention_mask_data, config);
-    } else {
-        // todo: implement multinomial sampling
-        // result = multinomial_sampling(input_ids, config);
+    } else if (config_helper.is_multinomial()) {
+        result = multinominal_decoding(m_model_runner, input_ids, attention_mask_data, config, streamer_ptr);
     } 
 
     if (!is_chat_conversation)

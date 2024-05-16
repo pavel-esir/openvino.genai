@@ -22,7 +22,7 @@ public:
 
     bool is_beam_search() const;
 
-    bool is_multimomial() const;
+    bool is_multinomial() const;
 
     GenerationConfig anymap_to_generation_config(const ov::AnyMap& config_map = {});
 

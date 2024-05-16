@@ -157,7 +157,7 @@ private:
  * utils that allow to use generate and operarator() in the folllowing way:
  * pipe.generate(input_ids, ov::max_new_tokens(200), ov::temperature(1.0f),...)
  * pipe(text, ov::max_new_tokens(200), ov::temperature(1.0f),...)
- * All names match to names in cofnig except streamer.
+ * All names match to names in config except streamer.
 */
 static constexpr ov::Property<size_t> max_new_tokens{"max_new_tokens"};
 static constexpr ov::Property<size_t> max_length{"max_length"};

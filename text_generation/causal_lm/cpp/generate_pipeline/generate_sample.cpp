@@ -90,5 +90,23 @@ int main(int argc, char* argv[]) {
     //     }
     // }
 
+
+    // Example 6: Sampling decoding
+    // {
+    //         ov::LLMPipeline pipe(model_path, device);
+    //         ov::GenerationConfig config = pipe.get_generation_config();
+    //         config.do_sample = true;
+    //         config.max_new_tokens = 100;
+    //         config.top_k = 50;
+    //         config.top_p = 0.2;
+
+    //         auto lamda = [](std::string subword) {
+    //             std::cout << subword << std::flush;
+    //         };
+
+            
+    //         pipe.generate(std::string{argv[2]}, config, lamda);
+    // }
+
     return 0;
 }
