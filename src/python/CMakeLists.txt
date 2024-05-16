@@ -16,7 +16,7 @@ if(NOT pybind11_POPULATED)
 endif()
 
 pybind11_add_module(py_generate_pipeline py_generate_pipeline.cpp)
-target_link_libraries(py_generate_pipeline PRIVATE openvino_genai)
+target_link_libraries(py_generate_pipeline PRIVATE genai)
 
 # find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 install(TARGETS py_generate_pipeline LIBRARY DESTINATION . COMPONENT pygenai_${Python_VERSION_MAJOR}_${Python_VERSION_MINOR})

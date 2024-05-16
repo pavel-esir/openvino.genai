@@ -14,7 +14,7 @@ namespace ov {
 /**
 * @brief class is used to encode prompts and decode resulting tokens
 */
-class openvino_genai_EXPORTS Tokenizer {
+class OPENVINO_GENAI_EXPORTS Tokenizer {
 public:
     /**
     * @brief ov::Tokenizer constructor.
