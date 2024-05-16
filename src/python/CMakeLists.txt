@@ -18,7 +18,6 @@ endif()
 pybind11_add_module(py_generate_pipeline py_generate_pipeline.cpp)
 target_link_libraries(py_generate_pipeline PRIVATE genai)
 
-# find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
 install(TARGETS py_generate_pipeline LIBRARY DESTINATION . COMPONENT pygenai)
 
 # setting RPATH / LC_RPATH depending on platform
