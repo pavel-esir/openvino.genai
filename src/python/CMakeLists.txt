@@ -43,3 +43,4 @@ add_custom_command(TARGET py_generate_pipeline POST_BUILD
         "$<TARGET_FILE:py_generate_pipeline>"
         "${CMAKE_CURRENT_SOURCE_DIR}/openvino_genai/$<TARGET_FILE_NAME:py_generate_pipeline>"
     COMMENT "Copy py_generate_pipeline to src/python/openvino_genai/")
+# TODO: install python into archive
