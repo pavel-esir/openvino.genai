@@ -12,7 +12,7 @@ endif()
 
 find_package(openvino_genai REQUIRED PATHS
     "${CMAKE_BINARY_DIR}"  # Reuse the package from the build.
-    ${OpenVINO_DIR}  # GenAI may be installed alogside OpenVINO.
+    # ${OpenVINO_DIR}  # GenAI may be installed alogside OpenVINO.
 )
 
 add_executable(greedy_causal_lm greedy_causal_lm.cpp)
@@ -57,3 +57,5 @@ target_link_libraries(chat_sample PRIVATE openvino::genai)
 target_include_directories(chat_sample PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 set_target_properties(chat_sample PROPERTIES CXX_STANDARD 17)
 set_target_properties(chat_sample PROPERTIES CXX_STANDARD_REQUIRED ON)
+
+# TODO: install samples
