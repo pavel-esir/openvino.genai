@@ -68,25 +68,30 @@ add_custom_command(TARGET ${TARGET_NAME} POST_BUILD
 
 install(TARGETS ${TARGET_NAME} LIBRARY DESTINATION . COMPONENT core_genai RUNTIME DESTINATION . COMPONENT core_genai)
 
-string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" ARCH_FOLDER)
-if(X86_64)
-    set(ARCH_FOLDER intel64)
-elseif(X86)
-    set(ARCH_FOLDER ia32)
-elseif(MSVC AND ARM)
-    set(ARCH_FOLDER arm)
-elseif((MSVC OR APPLE) AND AARCH64)
-    set(ARCH_FOLDER arm64)
-elseif(UNIVERSAL2)
-    set(ARCH_FOLDER universal2)
-elseif(ARCH_FOLDER STREQUAL "x86_64" OR ARCH_FOLDER STREQUAL "amd64"  # Windows detects Intel's 64-bit CPU as AMD64
+# - Windows: `<openvino_dir>\runtime\bin\intel64\Release\`
+# - MacOS_x86: `<openvino_dir>/runtime/lib/intel64/Release`
+# - MacOS_arm64: `<openvino_dir>/runtime/lib/arm64/Release/`
+# - Linux_x86: `<openvino_dir>/runtime/lib/intel64/`
+# - Linux_arm64: `<openvino_dir>/runtime/lib/aarch64/`
+string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" ARCH_DIR)
+if(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "amd64.*|x86_64.*|AMD64.*")
+    set(ARCH_DIR intel64)
+elseif(CMAKE_HOST_SYSTEM_PROCESSOR MATCHES "^(arm64.*|aarch64.*|AARCH64.*|ARM64.*)")
+    if(APPLE)
+        set(ARCH_DIR "arm64")
+    else()
+        set(ARCH_DIR "aarch64")
+    endif()
+elseif(ARCH_DIR STREQUAL "x86_64" OR ARCH_DIR STREQUAL "amd64"  # Windows detects Intel's 64-bit CPU as AMD64
         OR CMAKE_OSX_ARCHITECTURES STREQUAL "x86_64")
-    set(ARCH_FOLDER intel64)
+    set(ARCH_DIR intel64)
+endif()
+if(MSVC OR APPLE)
+    set(ARCH_DIR ${ARCH_DIR}/${CMAKE_BUILD_TYPE})
 endif()
 install(TARGETS ${TARGET_NAME} EXPORT openvino_genaiTargets
-    LIBRARY DESTINATION runtime/lib/${ARCH_FOLDER}/${CMAKE_BUILD_TYPE} COMPONENT core_genai_dev
-    ARCHIVE DESTINATION runtime/lib/${ARCH_FOLDER}/${CMAKE_BUILD_TYPE} COMPONENT core_genai_dev
-    RUNTIME DESTINATION runtime/bin/${ARCH_FOLDER}/${CMAKE_BUILD_TYPE} COMPONENT core_genai_dev
+    LIBRARY DESTINATION runtime/lib/${ARCH_DIR} COMPONENT core_genai_dev
+    RUNTIME DESTINATION runtime/bin/${ARCH_DIR} COMPONENT core_genai_dev
     INCLUDES DESTINATION runtime/include)
 install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION runtime/include COMPONENT core_genai_dev)
 install(EXPORT openvino_genaiTargets FILE openvino_genaiTargets.cmake NAMESPACE openvino:: DESTINATION runtime/cmake)
