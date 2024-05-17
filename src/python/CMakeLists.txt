@@ -45,4 +45,4 @@ add_custom_command(TARGET py_generate_pipeline POST_BUILD
     COMMENT "Copy py_generate_pipeline to src/python/openvino_genai/")
 
 find_package(Python3 REQUIRED COMPONENTS Interpreter Development)
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/openvino_genai/ DESTINATION python COMPONENT pygenai_${Python_VERSION_MAJOR}_${Python_VERSION_MINOR})
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/openvino_genai/ DESTINATION python/openvino_genai/ COMPONENT pygenai_${Python_VERSION_MAJOR}_${Python_VERSION_MINOR})
