@@ -14,6 +14,6 @@ add_subdirectory(src)
 add_subdirectory(text_generation/causal_lm/cpp)
 
 install(DIRECTORY text_generation/causal_lm/cpp/ DESTINATION samples/cpp/causal_lm COMPONENT cpp_samples_genai)
-install(FILES LICENSE third-party-programs.txt DESTINATION licenses_genai COMPONENT licensing_genai)  # TODO: how to merge with OPenvino
+install(FILES LICENSE third-party-programs.txt DESTINATION licensing_genai COMPONENT licensing_genai)  # TODO: how to merge with OPenvino
 set(CPACK_GENERATOR "ZIP")
 include(CPack)
