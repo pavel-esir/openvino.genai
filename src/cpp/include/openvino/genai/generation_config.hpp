@@ -9,7 +9,7 @@
 
 #include "openvino/runtime/compiled_model.hpp"
 #include "openvino/runtime/infer_request.hpp"
-#include "openvino_genai/tokenizer.hpp"
+#include "openvino/genai/tokenizer.hpp"
 
 namespace ov {
 
@@ -54,7 +54,7 @@ enum class StopCriteria { early, heuristic, never };
  * @param eos_token <eos> token string representation
  * @param draft_model draft model for assitive decoding
  */
-class OPENVINO_GENAI_EXPORTS GenerationConfig {
+class openvino/genai_EXPORTS GenerationConfig {
 public:
     GenerationConfig() = default;
     GenerationConfig(std::string json_path);

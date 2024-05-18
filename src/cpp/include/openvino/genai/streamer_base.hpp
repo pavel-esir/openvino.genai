@@ -3,7 +3,7 @@
 
 #pragma once
 
-#include "openvino_genai/tokenizer.hpp"
+#include "openvino/genai/tokenizer.hpp"
 
 namespace ov {
 

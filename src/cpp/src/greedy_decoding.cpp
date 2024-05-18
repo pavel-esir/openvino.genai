@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 #include "generation_config_helper.hpp"
-#include "openvino_genai/llm_pipeline.hpp"
+#include "openvino/genai/llm_pipeline.hpp"
 #include "utils.hpp"
 
 namespace ov {

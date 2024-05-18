@@ -7,9 +7,9 @@
 #include <variant>
 
 #include <openvino/core/any.hpp>
-#include "openvino_genai/generation_config.hpp"
-#include "openvino_genai/tokenizer.hpp"
-#include "openvino_genai/streamer_base.hpp"
+#include "openvino/genai/generation_config.hpp"
+#include "openvino/genai/tokenizer.hpp"
+#include "openvino/genai/streamer_base.hpp"
 
 namespace ov {
 
@@ -44,7 +44,7 @@ public:
 /**
 * @brief This class is used for generation with LLMs.
  */
-class OPENVINO_GENAI_EXPORTS LLMPipeline {
+class openvino/genai_EXPORTS LLMPipeline {
 public:
     /**
     * @brief Constructs a LLMPipeline when convert model xml/bin files, tokenizers and configuration and in the same dir.

@@ -4,8 +4,8 @@
 #pragma once
 
 #include <openvino/runtime/tensor.hpp>
-#include "openvino_genai/generation_config.hpp"
-#include "openvino_genai/llm_pipeline.hpp"
+#include "openvino/genai/generation_config.hpp"
+#include "openvino/genai/llm_pipeline.hpp"
 
 namespace ov {
     EncodedResults beam_search(ov::InferRequest& lm, ov::Tensor prompts, ov::Tensor attentin_mask, GenerationConfig sampling_params);
