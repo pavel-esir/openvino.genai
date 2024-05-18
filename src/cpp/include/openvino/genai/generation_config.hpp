@@ -54,7 +54,7 @@ enum class StopCriteria { early, heuristic, never };
  * @param eos_token <eos> token string representation
  * @param draft_model draft model for assitive decoding
  */
-class openvino/genai_EXPORTS GenerationConfig {
+class OPENVINO_GENAI_EXPORTS GenerationConfig {
 public:
     GenerationConfig() = default;
     GenerationConfig(std::string json_path);

@@ -44,7 +44,7 @@ public:
 /**
 * @brief This class is used for generation with LLMs.
  */
-class openvino/genai_EXPORTS LLMPipeline {
+class OPENVINO_GENAI_EXPORTS LLMPipeline {
 public:
     /**
     * @brief Constructs a LLMPipeline when convert model xml/bin files, tokenizers and configuration and in the same dir.

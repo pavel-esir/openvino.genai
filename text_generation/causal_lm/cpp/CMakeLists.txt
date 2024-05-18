@@ -57,5 +57,3 @@ target_link_libraries(chat_sample PRIVATE openvino::genai)
 target_include_directories(chat_sample PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 set_target_properties(chat_sample PROPERTIES CXX_STANDARD 17)
 set_target_properties(chat_sample PROPERTIES CXX_STANDARD_REQUIRED ON)
-
-# TODO: install samples
