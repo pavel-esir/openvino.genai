@@ -90,13 +90,13 @@ void apply_inv_temperature(float* first, float* last, float inv_temperature) {
     }
 }
 
-struct SamplingParameters {
+struct RandomSampling {
     const size_t top_k;
     const float top_p;
     const float inv_temperature;
     const float repetition_penalty;
 
-    SamplingParameters(ov::GenerationConfig generation_config)
+    RandomSampling(ov::GenerationConfig generation_config)
         : top_k{generation_config.top_k},
           top_p{generation_config.top_p},
           inv_temperature{1.f / generation_config.temperature},
@@ -115,19 +115,14 @@ struct SamplingParameters {
                         "Repetition penalty must be a strictly positive float, but got ",
                         generation_config.repetition_penalty);
     }
-};
-
-struct RandomSampling {
-    SamplingParameters parameters;
-    RandomSampling(SamplingParameters parameters) : parameters{std::move(parameters)} {}
 
     TokenIdScore get_out_token(float* logits, size_t vocab_size, const std::vector<int64_t> tokens) {
         // logits pre-process
-        if (parameters.repetition_penalty != 1.0f) {
-            apply_repetition_penalty(logits, logits + vocab_size, tokens, parameters.repetition_penalty);
+        if (repetition_penalty != 1.0f) {
+            apply_repetition_penalty(logits, logits + vocab_size, tokens, repetition_penalty);
         }
 
-        apply_inv_temperature(logits, logits + vocab_size, parameters.inv_temperature);
+        apply_inv_temperature(logits, logits + vocab_size, inv_temperature);
 
         std::vector<TokenIdScore> token_scores(vocab_size);
         for (size_t i = 0; i < vocab_size; i++) {
@@ -135,17 +130,17 @@ struct RandomSampling {
         }
 
         // top_k sampling
-        if (0 < parameters.top_k && parameters.top_k < token_scores.size()) {
+        if (0 < top_k && top_k < token_scores.size()) {
             std::nth_element(token_scores.data(),
-                             token_scores.data() + parameters.top_k,
+                             token_scores.data() + top_k,
                              token_scores.data() + token_scores.size(),
                              std::greater<TokenIdScore>());
-            token_scores.resize(parameters.top_k);
+            token_scores.resize(top_k);
         }
 
         // top_p sampling
-        if (0.f < parameters.top_p && parameters.top_p < 1.0f) {
-            auto pos = sample_top_p(token_scores.data(), token_scores.data() + token_scores.size(), parameters.top_p);
+        if (0.f < top_p && top_p < 1.0f) {
+            auto pos = sample_top_p(token_scores.data(), token_scores.data() + token_scores.size(), top_p);
             token_scores.resize(pos - token_scores.data());
         }
 
@@ -210,7 +205,7 @@ ov::EncodedResults multinominal_decoding(ov::InferRequest& m_model_runner,
 
     std::vector<int64_t> tokens{input_ids_data, input_ids_data + input_ids.get_size()};
 
-    RandomSampling sampling{SamplingParameters{generation_config}};
+    RandomSampling sampling{generation_config};
 
     TokenIdScore out_token = sampling.get_out_token(logits, vocab_size, tokens);
 
