@@ -13,7 +13,6 @@
 #include "openvino/genai/llm_pipeline.hpp"
 #include "utils.hpp"
 
-
 namespace {
 
 struct TokenIdScore {
@@ -29,7 +28,7 @@ struct TokenIdScore {
     }
 };
 
-void sampling_softmax_inplace(std::vector<TokenIdScore>& tokens) {
+void apply_softmax_inplace(std::vector<TokenIdScore>& tokens) {
     float max_score = std::max_element(tokens.begin(), tokens.end())->score;
     float sum = 0.f;
 
@@ -57,7 +56,7 @@ TokenIdScore* sample_top_p(TokenIdScore* first, TokenIdScore* last, float top_p)
     }
 
     // calculate softmax
-    sampling_softmax_inplace(token_scores);
+    apply_softmax_inplace(token_scores);
 
     float prefix_sum = 0.0f;
 
@@ -145,7 +144,7 @@ struct RandomSampling {
         }
 
         // sample next token
-        sampling_softmax_inplace(token_scores);
+        apply_softmax_inplace(token_scores);
         for (size_t i = 0; i < token_scores.size(); i++) {
             logits[i] = token_scores[i].score;
         }
