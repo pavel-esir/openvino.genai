@@ -62,7 +62,7 @@ TokenIdScore* sample_top_p(TokenIdScore* first, TokenIdScore* last, float top_p)
     float prefix_sum = 0.0f;
 
     // top_p
-    for (int i = 0; i < vocab_size; i++) {
+    for (size_t i = 0; i < vocab_size; i++) {
         prefix_sum += token_scores[i].score;
         if (prefix_sum >= top_p) {
             return first + (i + 1);
