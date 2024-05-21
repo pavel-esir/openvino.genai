@@ -244,7 +244,9 @@ ov::EncodedResults ov::LLMPipeline::LLMPipelineImpl::generate(
         result = beam_search(m_model_runner, input_ids, attention_mask_data, config);
     } else if (config_helper.is_multinomial()) {
         result = multinominal_decoding(m_model_runner, input_ids, attention_mask_data, config, streamer_ptr);
-    } 
+    } else {
+        OPENVINO_THROW("No decoding algorithm found for provided configuration parameters.");
+    }
 
     if (!is_chat_conversation)
         m_model_runner.reset_state();

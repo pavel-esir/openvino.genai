@@ -17,50 +17,47 @@
 namespace {
 
 struct TokenIdScore {
-    int id;
+    int64_t id;
     float score;
-
-    TokenIdScore() = default;
-    TokenIdScore(int id, float score) : id(id), score(score) {}
 
     bool operator<(const TokenIdScore& other) const {
         return score < other.score;
     }
+
     bool operator>(const TokenIdScore& other) const {
         return score > other.score;
     }
 };
 
-void sampling_softmax_inplace(TokenIdScore* first, TokenIdScore* last) {
-    float max_score = std::max_element(first, last)->score;
+void sampling_softmax_inplace(std::vector<TokenIdScore>& tokens) {
+    float max_score = std::max_element(tokens.begin(), tokens.end())->score;
     float sum = 0.f;
-    for (TokenIdScore* p = first; p != last; p++) {
-        float s = std::exp(p->score - max_score);
-        p->score = s;
+
+    for (auto& token : tokens) {
+        float s = std::exp(token.score - max_score);
+        token.score = s;
         sum += s;
     }
+
     float inv_sum = 1.f / sum;
-    for (TokenIdScore* p = first; p != last; p++) {
-        p->score *= inv_sum;
+
+    for (auto& token : tokens) {
+        token.score *= inv_sum;
     }
 }
 
-void sampling_top_k(TokenIdScore* first, TokenIdScore* kth, TokenIdScore* last) {
-    std::nth_element(first, kth, last, std::greater<TokenIdScore>());
-}
-
-TokenIdScore* sampling_top_p(TokenIdScore* first, TokenIdScore* last, float top_p) {
+TokenIdScore* sample_top_p(TokenIdScore* first, TokenIdScore* last, float top_p) {
     // sort score
     std::sort(first, last, std::greater<TokenIdScore>());
 
     int vocab_size = last - first;
     std::vector<TokenIdScore> token_scores(vocab_size);
-    for (int i = 0; i < vocab_size; i++) {
+    for (size_t i = 0; i < vocab_size; i++) {
         token_scores[i] = first[i];
     }
 
     // calculate softmax
-    sampling_softmax_inplace(token_scores.data(), token_scores.data() + token_scores.size());
+    sampling_softmax_inplace(token_scores);
 
     float prefix_sum = 0.0f;
 
@@ -75,7 +72,7 @@ TokenIdScore* sampling_top_p(TokenIdScore* first, TokenIdScore* last, float top_
     return last;
 }
 
-void sampling_repetition_penalty(float* first, float* last, const std::vector<int64_t>& input_ids, float penalty) {
+void apply_repetition_penalty(float* first, float* last, const std::vector<int64_t>& input_ids, float penalty) {
     const float inv_penalty = 1.f / penalty;
     const int vocab_size = last - first;
     std::vector<bool> occurrence(vocab_size, false);
@@ -87,23 +84,26 @@ void sampling_repetition_penalty(float* first, float* last, const std::vector<in
     }
 }
 
-void sampling_temperature(float* first, float* last, float temp) {
-    const float inv_temp = 1.f / temp;
+void apply_inv_temperature(float* first, float* last, float inv_temperature) {
     for (float* it = first; it != last; it++) {
-        *it *= inv_temp;
+        *it *= inv_temperature;
     }
 }
 
 struct SamplingParameters {
-    int top_k;
-    float top_p;
-    float temperature;
-    float repetition_penalty;
+    const size_t top_k;
+    const float top_p;
+    const float inv_temperature;
+    const float repetition_penalty;
 
-    SamplingParameters(ov::GenerationConfig generation_config) {
+    SamplingParameters(ov::GenerationConfig generation_config)
+        : top_k{generation_config.top_k},
+          top_p{generation_config.top_p},
+          inv_temperature{1.f / generation_config.temperature},
+          repetition_penalty{generation_config.repetition_penalty} {
         // parameters validation
         OPENVINO_ASSERT(generation_config.top_k > 0,
-                        "top_k must be a strictly positive float, but got ",
+                        "top_k must be a strictly positive, but got ",
                         generation_config.top_p);
         OPENVINO_ASSERT(generation_config.top_p > 0 || generation_config.top_p < 1.0f,
                         "top_p must be a positive float > 0 and < 1, but got ",
@@ -114,11 +114,6 @@ struct SamplingParameters {
         OPENVINO_ASSERT(generation_config.repetition_penalty > 0,
                         "Repetition penalty must be a strictly positive float, but got ",
                         generation_config.repetition_penalty);
-
-        top_k = generation_config.top_k;
-        top_p = generation_config.top_p;
-        temperature = generation_config.temperature;
-        repetition_penalty = generation_config.repetition_penalty;
     }
 };
 
@@ -126,37 +121,36 @@ struct RandomSampling {
     SamplingParameters parameters;
     RandomSampling(SamplingParameters parameters) : parameters{std::move(parameters)} {}
 
-    TokenIdScore get_out_token(float* logits, size_t vocab_size, std::vector<int64_t> tokens) {
+    TokenIdScore get_out_token(float* logits, size_t vocab_size, const std::vector<int64_t> tokens) {
         // logits pre-process
         if (parameters.repetition_penalty != 1.0f) {
-            sampling_repetition_penalty(logits, logits + vocab_size, tokens, parameters.repetition_penalty);
+            apply_repetition_penalty(logits, logits + vocab_size, tokens, parameters.repetition_penalty);
         }
 
-        if (parameters.temperature > 0) {
-            sampling_temperature(logits, logits + vocab_size, parameters.temperature);
-        }
+        apply_inv_temperature(logits, logits + vocab_size, parameters.inv_temperature);
 
         std::vector<TokenIdScore> token_scores(vocab_size);
-        for (int i = 0; i < vocab_size; i++) {
-            token_scores[i] = TokenIdScore(i, logits[i]);
+        for (size_t i = 0; i < vocab_size; i++) {
+            token_scores[i] = TokenIdScore{int64_t(i), logits[i]};
         }
 
         // top_k sampling
-        if (0 < parameters.top_k && parameters.top_k < (int)token_scores.size()) {
-            sampling_top_k(token_scores.data(),
-                           token_scores.data() + parameters.top_k,
-                           token_scores.data() + token_scores.size());
+        if (0 < parameters.top_k && parameters.top_k < token_scores.size()) {
+            std::nth_element(token_scores.data(),
+                             token_scores.data() + parameters.top_k,
+                             token_scores.data() + token_scores.size(),
+                             std::greater<TokenIdScore>());
             token_scores.resize(parameters.top_k);
         }
 
         // top_p sampling
         if (0.f < parameters.top_p && parameters.top_p < 1.0f) {
-            auto pos = sampling_top_p(token_scores.data(), token_scores.data() + token_scores.size(), parameters.top_p);
+            auto pos = sample_top_p(token_scores.data(), token_scores.data() + token_scores.size(), parameters.top_p);
             token_scores.resize(pos - token_scores.data());
         }
 
         // sample next token
-        sampling_softmax_inplace(token_scores.data(), token_scores.data() + token_scores.size());
+        sampling_softmax_inplace(token_scores);
         for (size_t i = 0; i < token_scores.size(); i++) {
             logits[i] = token_scores[i].score;
         }
@@ -165,16 +159,13 @@ struct RandomSampling {
         thread_local std::mt19937 gen(rd());
 
         std::discrete_distribution<> dist(logits, logits + token_scores.size());
-        TokenIdScore out_token = token_scores[dist(gen)];
-
-        return out_token;
+        return token_scores[dist(gen)];
     }
 };
 }  // namespace
 
 namespace ov {
 
-// todo: add batching
 ov::EncodedResults multinominal_decoding(ov::InferRequest& m_model_runner,
                                          ov::Tensor input_ids,
                                          ov::Tensor attention_mask,
@@ -184,12 +175,14 @@ ov::EncodedResults multinominal_decoding(ov::InferRequest& m_model_runner,
 
     ov::Shape prompts_shape = input_ids.get_shape();
     size_t batch_size = prompts_shape[0];
+
+    OPENVINO_ASSERT(batch_size == 1, "Only batch size = 1 supported for multinomial decoding");
+
     size_t prompt_len = prompts_shape[1];
 
     ov::EncodedResults results;
-    results.scores.resize(batch_size);
+    results.scores.resize(batch_size, 0);
     results.tokens.resize(batch_size);
-    std::fill(results.scores.begin(), results.scores.end(), 0);
 
     // Initialize inputs
     m_model_runner.set_tensor("input_ids", input_ids);
@@ -199,6 +192,8 @@ ov::EncodedResults multinominal_decoding(ov::InferRequest& m_model_runner,
     position_ids.set_shape(input_ids.get_shape());
     std::iota(position_ids.data<int64_t>(), position_ids.data<int64_t>() + position_ids.get_size(), 0);
 
+    // Input values are persistent between inference calls.
+    // That allows to set values, which aren't going to change, only once
     m_model_runner.get_tensor("beam_idx").set_shape({batch_size});
     m_model_runner.get_tensor("beam_idx").data<int32_t>()[0] = 0;
 
@@ -209,7 +204,7 @@ ov::EncodedResults multinominal_decoding(ov::InferRequest& m_model_runner,
     int64_t sequence_offset = logits_tensor.get_shape().at(1) - 1;
     size_t vocab_size = logits_tensor.get_shape().back();
 
-    float* logits = logits_tensor.data<float>() + (sequence_offset)*vocab_size;
+    float* logits = logits_tensor.data<float>() + sequence_offset * vocab_size;
 
     const int64_t* input_ids_data = input_ids.data<const int64_t>();
 
