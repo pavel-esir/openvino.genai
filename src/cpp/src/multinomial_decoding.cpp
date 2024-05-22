@@ -95,6 +95,9 @@ struct RandomSampling {
     const float inv_temperature;
     const float repetition_penalty;
 
+    std::random_device rd;
+    std::mt19937 gen{rd()};
+
     RandomSampling(ov::GenerationConfig generation_config)
         : top_k{generation_config.top_k},
           top_p{generation_config.top_p},
@@ -148,9 +151,6 @@ struct RandomSampling {
         for (size_t i = 0; i < token_scores.size(); i++) {
             logits[i] = token_scores[i].score;
         }
-
-        thread_local std::random_device rd;
-        thread_local std::mt19937 gen(rd());
 
         std::discrete_distribution<> dist(logits, logits + token_scores.size());
         return token_scores[dist(gen)];
