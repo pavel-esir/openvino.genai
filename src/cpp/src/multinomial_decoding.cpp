@@ -118,13 +118,15 @@ struct RandomSampling {
                         generation_config.repetition_penalty);
     }
 
-    TokenIdScore get_out_token(float* logits, size_t vocab_size, const std::vector<int64_t> tokens) {
+    TokenIdScore get_out_token(float* logits, size_t vocab_size, const std::vector<int64_t>& tokens) {
         // logits pre-process
         if (repetition_penalty != 1.0f) {
             apply_repetition_penalty(logits, logits + vocab_size, tokens, repetition_penalty);
         }
 
-        apply_inv_temperature(logits, logits + vocab_size, inv_temperature);
+        if (inv_temperature != 1.0f) {
+            apply_inv_temperature(logits, logits + vocab_size, inv_temperature);
+        }
 
         std::vector<TokenIdScore> token_scores(vocab_size);
         for (size_t i = 0; i < vocab_size; i++) {
