@@ -14,7 +14,6 @@
 #include "openvino/genai/llm_pipeline.hpp"
 #include "utils.hpp"
 #include "generation_config_helper.hpp"
-#include "group_beam_searcher.hpp"
 #include "text_callback_streamer.hpp"
 
 
@@ -36,6 +35,8 @@ ov::EncodedResults multinominal_decoding(
     GenerationConfig sampling_params,
     std::shared_ptr<StreamerBase> streamer
 );
+
+EncodedResults beam_search(ov::InferRequest& lm, ov::Tensor prompts, ov::Tensor attentin_mask, GenerationConfig config);
 
 
 class LLMPipeline::LLMPipelineImpl {
