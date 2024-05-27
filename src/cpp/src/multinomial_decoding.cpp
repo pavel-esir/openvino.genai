@@ -13,6 +13,7 @@
 #include "openvino/genai/llm_pipeline.hpp"
 #include "utils.hpp"
 
+
 namespace {
 
 struct TokenIdScore {
@@ -97,7 +98,7 @@ struct RandomSampling {
 
     std::mt19937 gen{std::random_device{}()};
 
-    RandomSampling(ov::GenerationConfig generation_config)
+    RandomSampling(ov::genai::GenerationConfig generation_config)
         : top_k{generation_config.top_k},
           top_p{generation_config.top_p},
           inv_temperature{1.f / generation_config.temperature},
@@ -160,14 +161,13 @@ struct RandomSampling {
 }  // namespace
 
 namespace ov {
+namespace genai {
 
-ov::EncodedResults multinominal_decoding(ov::InferRequest& m_model_runner,
-                                         ov::Tensor input_ids,
-                                         ov::Tensor attention_mask,
-                                         ov::GenerationConfig generation_config,
-                                         std::shared_ptr<StreamerBase> streamer) {
-    ov::GenerationConfigHelper config_helper{generation_config};
-
+ov::genai::EncodedResults multinominal_decoding(ov::InferRequest& m_model_runner,
+                                                ov::Tensor input_ids,
+                                                ov::Tensor attention_mask,
+                                                ov::genai::GenerationConfig config,
+                                                std::shared_ptr<ov::genai::StreamerBase> streamer) {
     ov::Shape prompts_shape = input_ids.get_shape();
     size_t batch_size = prompts_shape[0];
 
@@ -175,7 +175,7 @@ ov::EncodedResults multinominal_decoding(ov::InferRequest& m_model_runner,
 
     size_t prompt_len = prompts_shape[1];
 
-    ov::EncodedResults results;
+    ov::genai::EncodedResults results;
     results.scores.resize(batch_size, 0);
     results.tokens.resize(batch_size);
 
@@ -205,7 +205,7 @@ ov::EncodedResults multinominal_decoding(ov::InferRequest& m_model_runner,
 
     std::vector<int64_t> tokens{input_ids_data, input_ids_data + input_ids.get_size()};
 
-    RandomSampling sampling{generation_config};
+    RandomSampling sampling{config};
 
     TokenIdScore out_token = sampling.get_out_token(logits, vocab_size, tokens);
 
@@ -217,20 +217,20 @@ ov::EncodedResults multinominal_decoding(ov::InferRequest& m_model_runner,
         streamer->put(out_token.id);
     }
 
-    if (!generation_config.ignore_eos && out_token.id == generation_config.eos_token_id) {
+    if (!config.ignore_eos && out_token.id == config.eos_token_id) {
         return results;
     }
 
     m_model_runner.get_tensor("input_ids").set_shape({batch_size, 1});
     m_model_runner.get_tensor("position_ids").set_shape({batch_size, 1});
 
-    size_t max_new_tokens = config_helper.get_max_new_tokens(prompt_len);
+    size_t max_new_tokens = config.get_max_new_tokens(prompt_len);
 
     for (size_t i = 0; i < max_new_tokens - 1; i++) {
-        ov::generate_utils::update_position_ids(m_model_runner.get_tensor("position_ids"),
-                                                m_model_runner.get_tensor("attention_mask"));
+        ov::genai::utils::update_position_ids(m_model_runner.get_tensor("position_ids"),
+                                              m_model_runner.get_tensor("attention_mask"));
         m_model_runner.set_tensor("attention_mask",
-                                  ov::generate_utils::extend_attention(m_model_runner.get_tensor("attention_mask")));
+                                  ov::genai::utils::extend_attention(m_model_runner.get_tensor("attention_mask")));
 
         m_model_runner.get_tensor("input_ids").data<int64_t>()[0] = out_token.id;
 
@@ -247,7 +247,7 @@ ov::EncodedResults multinominal_decoding(ov::InferRequest& m_model_runner,
             streamer->put(out_token.id);
         }
 
-        if (!generation_config.ignore_eos && out_token.id == generation_config.eos_token_id) {
+        if (!config.ignore_eos && out_token.id == config.eos_token_id) {
             break;
         }
     }
@@ -258,4 +258,5 @@ ov::EncodedResults multinominal_decoding(ov::InferRequest& m_model_runner,
 
     return results;
 }
+}  // namespace genai
 }  // namespace ov

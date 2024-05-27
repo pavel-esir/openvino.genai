@@ -270,7 +270,7 @@ ov::genai::EncodedResults ov::genai::LLMPipeline::LLMPipelineImpl::generate(
         result = ov::genai::greedy_decoding(m_model_runner, input_ids, attention_mask_data, config, streamer_ptr, is_chat_conversation);
     } else if (config.is_beam_search()) {
         result = beam_search(m_model_runner, input_ids, attention_mask_data, config);
-    } else if (config_helper.is_multinomial()) {
+    } else if (config.is_multinomial()) {
         result = multinominal_decoding(m_model_runner, input_ids, attention_mask_data, config, streamer_ptr);
     } else {
         OPENVINO_THROW("No decoding algorithm found for provided configuration parameters.");
