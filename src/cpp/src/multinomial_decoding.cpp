@@ -49,9 +49,9 @@ TokenIdScore* sample_top_p(TokenIdScore* first, TokenIdScore* last, float top_p)
     // sort score
     std::sort(first, last, std::greater<TokenIdScore>());
 
-    int vocab_size = last - first;
-    std::vector<TokenIdScore> token_scores(vocab_size);
-    for (size_t i = 0; i < vocab_size; i++) {
+    int tokens_size = last - first;
+    std::vector<TokenIdScore> token_scores(tokens_size);
+    for (size_t i = 0; i < tokens_size; i++) {
         token_scores[i] = first[i];
     }
 
@@ -61,7 +61,7 @@ TokenIdScore* sample_top_p(TokenIdScore* first, TokenIdScore* last, float top_p)
     float prefix_sum = 0.0f;
 
     // top_p
-    for (size_t i = 0; i < vocab_size; i++) {
+    for (size_t i = 0; i < tokens_size; i++) {
         prefix_sum += token_scores[i].score;
         if (prefix_sum >= top_p) {
             return first + (i + 1);
@@ -95,8 +95,7 @@ struct RandomSampling {
     const float inv_temperature;
     const float repetition_penalty;
 
-    std::random_device rd;
-    std::mt19937 gen{rd()};
+    std::mt19937 gen{std::random_device{}()};
 
     RandomSampling(ov::GenerationConfig generation_config)
         : top_k{generation_config.top_k},
