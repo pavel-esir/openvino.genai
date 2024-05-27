@@ -10,7 +10,7 @@ else()
     set(OPENVINO_TOKENIZERS_PATH ${CMAKE_CURRENT_SOURCE_DIR}/../../bin/openvino_tokenizers.dll)  # TODO: I'll go away after the generate() gets a way to find openvino_tokenizers
 endif()
 
-find_package(openvino_genai REQUIRED PATHS
+find_package(OpenVINOGenAI REQUIRED PATHS
     "${CMAKE_BINARY_DIR}"  # Reuse the package from the build.
     ${OpenVINO_DIR}  # GenAI may be installed alogside OpenVINO.
 )
@@ -57,3 +57,8 @@ target_link_libraries(multinomial_causal_lm PRIVATE openvino::genai)
 target_include_directories(multinomial_causal_lm PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 set_target_properties(multinomial_causal_lm PROPERTIES CXX_STANDARD 17)
 set_target_properties(multinomial_causal_lm PROPERTIES CXX_STANDARD_REQUIRED ON)
+
+install(TARGETS greedy_causal_lm beam_search_causal_lm speculative_decoding_lm prompt_lookup_decoding_lm chat_sample multinomial_causal_lm
+    RUNTIME DESTINATION samples_bin/
+    COMPONENT samples_bin
+    EXCLUDE_FROM_ALL)
