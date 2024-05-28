@@ -108,11 +108,6 @@ struct Group {
     void finish(Beam&& beam, const Parameters& parameters) {
         beam.score /= std::pow(float(beam.tokens.size()), parameters.length_penalty);
 
-        // HF implementation counts eos_token for length penalty calculation
-        if (beam.tokens.back() == parameters.eos_token_id) {
-            beam.tokens.pop_back();
-        }
-
         min_heap.push_back(std::move(beam));
         std::push_heap(min_heap.begin(), min_heap.end(), greater);
         if (min_heap.size() > parameters.group_size) {
