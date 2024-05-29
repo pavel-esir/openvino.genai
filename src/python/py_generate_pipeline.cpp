@@ -197,13 +197,6 @@ PYBIND11_MODULE(py_generate_pipeline, m) {
         .def("generate", py::overload_cast<LLMPipeline&, const std::string&, const GenerationConfig&, const StreamerVariant&>(&call_with_config))
         
         // todo: if input_ids is a ov::Tensor/numpy tensor
-        // todo: implement calling generate/operator() with StreamerBase or lambda streamer
-        // signature to be implemented:
-        // EncodedResults generate(ov::Tensor input_ids, 
-        //                 std::optional<ov::Tensor> attention_mask, 
-        //                 OptionalGenerationConfig generation_config=nullopt,
-        //                 OptionalStreamerVariant streamer=nullopt);
-        
 
         .def("get_tokenizer", &LLMPipeline::get_tokenizer)
         .def("start_chat", &LLMPipeline::start_chat)
