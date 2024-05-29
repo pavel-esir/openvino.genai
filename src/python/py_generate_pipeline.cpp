@@ -42,6 +42,7 @@ using ov::genai::GenerationConfig;
 using ov::genai::EncodedResults;
 using ov::genai::DecodedResults;
 using ov::genai::StopCriteria;
+using ov::genai::StreamerBase;
 using ov::genai::StreamerVariant;
 
 namespace {
@@ -151,6 +152,20 @@ std::string ov_tokenizers_module_path() {
     }
     return py::str(py::module_::import("openvino_tokenizers").attr("_ext_path"));
 }
+class EmptyStreamer: public StreamerBase {
+    // It's impossible to create an instance of pure virtual class. Define EmptyStreamer instead.
+    void put(int64_t token) override {
+        PYBIND11_OVERRIDE_PURE(
+            void,  // Return type
+            StreamerBase,  // Parent class
+            put,  // Name of function in C++ (must match Python name)
+            token  // Argument(s)
+        );
+    }
+    void end() override {
+        PYBIND11_OVERRIDE_PURE(void, StreamerBase, end);
+    }
+};
 }
 
 PYBIND11_MODULE(py_generate_pipeline, m) {
@@ -248,4 +263,8 @@ PYBIND11_MODULE(py_generate_pipeline, m) {
         .def_readwrite("tokens", &EncodedResults::tokens)
         .def_readwrite("scores", &EncodedResults::scores);
 
+    py::class_<StreamerBase, EmptyStreamer, std::shared_ptr<StreamerBase>>(m, "StreamerBase")  // Change the holder form unique_ptr to shared_ptr
+        .def(py::init<>())
+        .def("put", &StreamerBase::put)
+        .def("end", &StreamerBase::end);
 }
