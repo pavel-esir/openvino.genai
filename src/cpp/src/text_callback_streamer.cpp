@@ -18,6 +18,7 @@ TextCallbackStreamer::TextCallbackStreamer(const Tokenizer& tokenizer, bool prin
 void TextCallbackStreamer::put(int64_t token) {
     std::stringstream res;
     // do nothing if <eos> token is met and if print_eos_token=false
+    // todo: remove when skip_special_tokens = True applied for tokenizer by default
     if (!m_print_eos_token && token == m_tokenizer.get_eos_token_id())
         return;
 
