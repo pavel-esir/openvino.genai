@@ -39,7 +39,6 @@ ov::genai::TokenizedInputs pad_left(ov::Tensor&& input_ids, ov::Tensor&& attenti
     return {input_ids, attention_mask};
 }
 
-
 #ifdef _WIN32
 #    include <windows.h>
 #    define MAX_ABS_PATH _MAX_PATH
