@@ -39,14 +39,6 @@ ov::genai::TokenizedInputs pad_left(ov::Tensor&& input_ids, ov::Tensor&& attenti
     return {input_ids, attention_mask};
 }
 
-// todo: remove when skip_special_tokens = True applied for tokenizer by default
-std::vector<int64_t> filter_eos_token(const std::vector<int64_t>& tokens, const int64_t eos_token) {
-    std::vector<int64_t> filtered;
-    std::copy_if(tokens.begin(), tokens.end(), std::back_inserter(filtered), [&eos_token](int64_t token){
-        return token != eos_token;
-    });
-    return filtered;
-}
 
 #ifdef _WIN32
 #    include <windows.h>
@@ -177,9 +169,8 @@ public:
     }
 
     std::string decode(std::vector<int64_t> tokens) {
-        auto without_eos_tokens = filter_eos_token(tokens, m_eos_token_id);
         size_t batch_size = 1;
-        m_detokenizer_request.set_input_tensor(ov::Tensor{ov::element::i64, {batch_size, without_eos_tokens.size()}, without_eos_tokens.data()});
+        m_detokenizer_request.set_input_tensor(ov::Tensor{ov::element::i64, {batch_size, tokens.size()}, tokens.data()});
         m_detokenizer_request.infer();
         return m_detokenizer_request.get_output_tensor().data<std::string>()[0];
     }
@@ -200,8 +191,7 @@ public:
         // todo: implement calling detokenizer in a single batch
         std::vector<std::string> results;
         for (auto& line: lines){
-            auto without_eos_tokens = filter_eos_token(line, m_eos_token_id);
-            ov::Tensor tokens = ov::Tensor{ov::element::i64, {1, without_eos_tokens.size()}, without_eos_tokens.data()};
+            ov::Tensor tokens = ov::Tensor{ov::element::i64, {1, line.size()}, line.data()};
             m_detokenizer_request.set_input_tensor(tokens);
             m_detokenizer_request.infer();
             auto res = m_detokenizer_request.get_output_tensor();
