@@ -10,18 +10,15 @@ int main(int argc, char* argv[]) try {
     std::string model_path = argv[1];
     std::string prompt = argv[2];
     
-    // GPU can be used as well
-    std::string device = "CPU";  
-    if (argc > 3) device = argv[3];
+    std::string device = "CPU";  // GPU can be used as well
+    if (argc > 3) 
+        device = argv[3];
 
     ov::genai::LLMPipeline pipe(model_path, device);
-    ov::genai::GenerationConfig config = pipe.get_generation_config();
+    ov::genai::GenerationConfig config;
     config.max_new_tokens = 100;
-    config.do_sample = false;
-    auto streamer = [](std::string subword){ std::cout << subword << std::flush; return false; };
-    
-    // since streamer is set results will be printed each time a new token is generated
-    pipe.generate(prompt, config, streamer);
+    std::string result = pipe.generate(prompt, config);
+    std::cout << result;
 } catch (const std::exception& error) {
     std::cerr << error.what() << '\n';
     return EXIT_FAILURE;

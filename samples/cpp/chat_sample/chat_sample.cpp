@@ -4,17 +4,20 @@
 #include "openvino/genai/llm_pipeline.hpp"
 
 int main(int argc, char* argv[]) try {
-    std::string prompt;
-    std::string accumulated_str = "";
-
     std::string model_path = argv[1];
     ov::genai::LLMPipeline pipe(model_path, "CPU");
     
-    ov::genai::GenerationConfig config = pipe.get_generation_config();
+    ov::genai::GenerationConfig config;
     config.max_new_tokens = 10000;
-    std::function<bool(std::string)> streamer = [](std::string word) { std::cout << word << std::flush; return false; };
+    auto streamer = [](std::string word) -> bool { 
+        std::cout << word << std::flush;
+        // flag correspods whether generation should be stopped.
+        // false means continue generation.
+        return false;
+    };
 
     pipe.start_chat();
+    std::string prompt;
     for (;;) {
         std::cout << "question:\n";
         
